@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">UrlWideSearch</string>
+    <string name="hint_start_url">Enter url as started place here</string>
+    <string name="hint_text_to_search">Enter text to search</string>
+    <string name="hint_max_threads">Threads? Best rule = cores * 2</string>
+    <string name="hint_max_urls">Pages limit</string>
+    <string name="start_search">Let\'s start search</string>
 </resources>
