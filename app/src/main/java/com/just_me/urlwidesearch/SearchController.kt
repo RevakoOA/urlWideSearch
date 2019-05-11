@@ -1,6 +1,7 @@
 package com.just_me.urlwidesearch
 
 import android.app.Application
+import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.android.volley.Cache
 import com.android.volley.Request.Method.GET
@@ -8,6 +9,7 @@ import com.android.volley.RequestQueue
 import com.android.volley.toolbox.*
 import java.io.File
 import java.lang.Exception
+import java.lang.reflect.Modifier.PRIVATE
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -80,17 +82,22 @@ class UrlPageTask(val url: String, val id: Int, val searchingText: String): Call
 	 }
   }
 
-  private fun parseResponse(body: String, searchingText: String): List<Int> {
+  @VisibleForTesting
+  fun parseResponse(body: String, searchingText: String, ignoreCase: Boolean = false): List<Int> {
 	 var foundPosition = body.indexOf(searchingText, 0);
 	 val listOfFoundPlaces = mutableListOf<Int>()
-	 while (foundPosition != -1) {
-		listOfFoundPlaces.add(foundPosition)
-	 	foundPosition = body.indexOf(searchingText, 0);
-	 }
+	 try {
+		while (foundPosition != -1) {
+		  listOfFoundPlaces.add(foundPosition)
+		  foundPosition = body.indexOf(searchingText, foundPosition+1, ignoreCase);
+		}
+	 } catch (ignored: Exception) {}
+
 	 return listOfFoundPlaces
   }
 
-  private fun parseResponseUrls(body: String, urlPattern: String): List<String> {
+  @VisibleForTesting
+  fun parseResponseUrls(body: String, urlPattern: String): List<String> {
 		return body.split(" ", ignoreCase = true).filter { it.startsWith(urlPattern) }
   }
 
