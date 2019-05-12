@@ -1,6 +1,7 @@
 package com.just_me.urlwidesearch
 
 import androidx.test.InstrumentationRegistry
+import androidx.test.InstrumentationRegistry.getTargetContext
 import androidx.test.runner.AndroidJUnit4
 
 import org.junit.Test
@@ -18,7 +19,7 @@ class ExampleInstrumentedTest {
     @Test
     fun useAppContext() {
         // Context of the app under test.
-        val appContext = InstrumentationRegistry.getTargetContext()
+        val appContext = getTargetContext()
         assertEquals("com.just_me.urlwidesearch", appContext.packageName)
     }
 }

@@ -8,20 +8,21 @@ class UrlPageTaskTest {
 
   @Test
   fun parseResponse() {
-    val task = UrlPageTask("", 0, "x");
-    val result = task.parseResponse("body text bodyil, dody", "body");
-    assert(result.size == 2)
-    assert(result[0] == 0)
-    assert(result[1] == 10)
+	 val result = UrlPageTask.parseResponse("body text bodyil, dody", "body");
+	 assert(result.size == 2)
+	 assert(result[0] == 0)
+	 assert(result[1] == 10)
   }
 
   @Test
   fun parseResponseUrls() {
-    val task = UrlPageTask("", 0, "x");
-    val result = task.parseResponseUrls(" http://trello.com text thttp://gravity.no " +
-       "bodyil, http://google.com.ua ", "http://");
-    assert(result.size == 2)
-    assert(result[0] == "http://trello.com")
-    assert(result[1] == "http://google.com.ua")
+	 val result = UrlPageTask.parseResponseUrls(
+		" http://www.trello.com text zhttp://gravity.no " +
+			"bodyil, >http://google.com.ua ", SearchController.TUPICAL_URL_PATTERN
+	 )
+	 assert(result.size == 3)
+	 assert(result[0] == "http://www.trello.com")
+	 assert(result[1] == "http://gravity.no")
+	 assert(result[2] == "http://google.com.ua")
   }
 }
