@@ -9,68 +9,99 @@ import com.android.volley.RequestQueue
 import com.android.volley.toolbox.*
 import java.io.File
 import java.lang.Exception
-import java.lang.reflect.Modifier.PRIVATE
-import java.util.concurrent.Callable
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.*
+import java.util.concurrent.atomic.AtomicBoolean
 
 
-object SearchController {
+class SearchController(app: Application, val maxThread: Int, val pagesLimit: Int) {
 
   private val TAG: String = SearchController::class.java.simpleName
 
-  lateinit var cache: Cache
-  lateinit var queue: RequestQueue
-  lateinit var executor: ExecutorService
+  val cache: Cache = DiskBasedCache(File(app.cacheDir, "Volley"))
+  val queue: RequestQueue by lazy { RequestQueue(cache, BasicNetwork(HurlStack()), maxThread) }
+  val executor: ExecutorService by lazy { return@lazy Executors.newFixedThreadPool(maxThread) }
+  val pageTasksList: MutableList<UrlPageTask> = mutableListOf()
+  val pageResultsList: MutableList<UrlPageResult> = mutableListOf()
 
+  fun search(
+	 startUrl: String, textToSearch: String, updateCallback: (finishedId: Int) -> Unit,
+	 finishingCallback: (SearchResult) -> Unit
+  ) {
+	 queue.cancelAll { true }
 
-  fun init(app: Application) {
-	 val cacheDir = File(app.cacheDir, "Volley")
-	 cache = DiskBasedCache(cacheDir)
+	 pageTasksList.clear()
+	 pageTasksList.add(UrlPageTask(startUrl, 0, textToSearch, this::unifiedHandler))
+	 runAllAvailableTasks()
   }
 
-  fun search(startUrl: String, textToSearch: String, maxThread: Int, maxPages: Int) {
-	 if (this::queue.isInitialized) {
-		queue.cancelAll { true }
-	 } else {
-		queue = RequestQueue(cache, BasicNetwork(HurlStack()), maxThread)
+  private fun unifiedHandler(urlPageResult: UrlPageResult) {
+	 if (pageResultsList.find { it.url == urlPageResult.url } != null) return
+	 pageResultsList.add(urlPageResult)
+	 when (urlPageResult) {
+		is UrlPageResult.SucceedUrlPageResult -> {
+		  val availableSlots = pagesLimit - pageTasksList.count()
+			 pageTasksList.addAll(urlPageResult.foundedUrls.take(availableSlots).map { url ->
+				UrlPageTask(url, pageTasksList.last().id + 1, urlPageResult.searchingText, this::unifiedHandler)
+			 })
+		}
+		is UrlPageResult.FailedUrlPageResult -> {
+
+		}
 	 }
-	 if (this::executor.isInitialized) {
-		executor.shutdown()
+	 runAllAvailableTasks()
+  }
+
+  fun runAllAvailableTasks() {
+	 pageTasksList.filter {
+		!it.isProccedToExecuting.get()
+	 }.forEach {
+		it.isProccedToExecuting.set(true)
+		executor.execute(it)
 	 }
-	 executor = Executors.newFixedThreadPool(maxThread)
   }
 
 }
 
+class SearchResult(val results: List<UrlPageResult>) {
+}
+
 typealias Callback = (UrlPageResult) -> Unit
 
-class UrlPageTask(val url: String, val id: Int, val searchingText: String): Callable<UrlPageResult> {
+class UrlPageTask(val url: String, val id: Int, val searchingText: String, val callback: Callback) : Runnable {
 
-  var isDone: Boolean = false
-  	private set
+  val isProccedToExecuting: AtomicBoolean = AtomicBoolean(false);
+
   var isCancelled: Boolean = false
-  	private set
-  private val callbackList: List<Callback> = mutableListOf()
+	 private set
+  var isPaused: AtomicBoolean = AtomicBoolean(false)
 
-  fun addCallback(callback: Callback) {
-	 if (isDone) {
-
+  @WorkerThread
+  override fun run() {
+	 try {
+		sleepIfNeed();
+		val response = makeRequest(url);
+		sleepIfNeed();
+		val foundedPlaces = parseResponse(response, searchingText)
+		sleepIfNeed();
+		val foundedUrls = parseResponseUrls(response, "http://")
+		sleepIfNeed();
+		callback(UrlPageResult.SucceedUrlPageResult(url, id, searchingText, foundedPlaces, foundedUrls))
+	 } catch (e: Throwable) {
+		sleepIfNeed();
+		callback(UrlPageResult.FailedUrlPageResult(url, id, searchingText, e))
 	 }
   }
 
   @WorkerThread
-  override fun call(): UrlPageResult {
-	 try {
-		val response = makeRequest(url);
-		val foundedPlaces = parseResponse(response, searchingText)
-		val foundedUrls = parseResponseUrls(response, "http://")
-		return UrlPageResult.SucceedUrlPageResult(url, id, searchingText, foundedPlaces, foundedUrls)
-	 } catch (e: Throwable) {
-		return UrlPageResult.FailedUrlPageResult(e)
+  private fun sleepIfNeed() {
+	 while (isPaused.get()) {
+		Thread.sleep(200);
 	 }
   }
+
+  fun pause() = isPaused.set(true)
+
+  fun resume() = isPaused.set(false)
 
   private fun makeRequest(url: String, timeOut: Long = 10): String {
 	 val requestFuture = RequestFuture.newFuture<String>();
@@ -89,25 +120,30 @@ class UrlPageTask(val url: String, val id: Int, val searchingText: String): Call
 	 try {
 		while (foundPosition != -1) {
 		  listOfFoundPlaces.add(foundPosition)
-		  foundPosition = body.indexOf(searchingText, foundPosition+1, ignoreCase);
+		  foundPosition = body.indexOf(searchingText, foundPosition + 1, ignoreCase);
 		}
-	 } catch (ignored: Exception) {}
+	 } catch (ignored: Exception) {
+	 }
 
 	 return listOfFoundPlaces
   }
 
   @VisibleForTesting
   fun parseResponseUrls(body: String, urlPattern: String): List<String> {
-		return body.split(" ", ignoreCase = true).filter { it.startsWith(urlPattern) }
+	 return body.split(" ", ignoreCase = true).filter { it.startsWith(urlPattern) }
   }
 
-  companion object{
+  companion object {
 	 private val TAG: String = UrlPageTask::class.java.simpleName
   }
 }
 
-sealed class UrlPageResult {
-  data class SucceedUrlPageResult(val url: String, val id: Int, val searchingText: String,
-											 val foundedPlaces: List<Int>, val foundedUrls: List<String>): UrlPageResult()
-  data class FailedUrlPageResult(val throwable: Throwable): UrlPageResult()
+sealed class UrlPageResult(val url: String, val id: Int, val searchingText: String) {
+  class SucceedUrlPageResult(
+	 url: String, id: Int, searchingText: String,
+	 val foundedPlaces: List<Int>, val foundedUrls: List<String>
+  ) : UrlPageResult(url, id, searchingText)
+
+  class FailedUrlPageResult(url: String, id: Int, searchingText: String, val throwable: Throwable) :
+	 UrlPageResult(url, id, searchingText)
 }
