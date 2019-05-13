@@ -11,6 +11,7 @@
     <string name="error_occurred">Error: %s</string>
     <string name="pause">Pause</string>
     <string name="resume">Resume</string>
+    <string name="finished">Finished</string>
     <string name="cancel">Cancel</string>
     <string name="canceled">Canceled!</string>
     <string name="go_back">Go back</string>

@@ -59,6 +59,8 @@ class ResultFragment : Fragment() {
 
   fun finishedSearching(result: SearchResult) {
 	 updateProgress(SearchUpdate(1f, result.results))
+	 pauseResume.setText(R.string.finished)
+	 cancel.setText(R.string.go_back)
   }
 
   override fun onDestroy() {
