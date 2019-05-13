@@ -33,7 +33,7 @@ class ResultFragment : Fragment() {
 		if (pauseResume.text.toString() == context!!.getString(R.string.pause)) {
 		  viewModel.pause()
 		  pauseResume.setText(R.string.resume)
-		} else {
+		} else if (pauseResume.text.toString() == context!!.getString(R.string.resume)) {
 		  viewModel.resume()
 		  pauseResume.setText(R.string.pause)
 		}
@@ -54,7 +54,7 @@ class ResultFragment : Fragment() {
   fun updateProgress(updateResult: SearchUpdate) {
 	 progresBar.progress = (updateResult.progress * 100).roundToInt()
 	 adapter.submitList(updateResult.currentResults)
-	 recyclerParcedUrls.invalidate()
+	 adapter.notifyDataSetChanged()
   }
 
   fun finishedSearching(result: SearchResult) {
