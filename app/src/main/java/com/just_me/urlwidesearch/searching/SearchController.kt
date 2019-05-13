@@ -7,6 +7,7 @@ import com.android.volley.RequestQueue
 import com.android.volley.toolbox.*
 import java.io.File
 import java.util.concurrent.*
+import java.util.concurrent.atomic.AtomicInteger
 
 
 /**
@@ -17,6 +18,7 @@ import java.util.concurrent.*
 class SearchController(app: Application, val maxThread: Int, val pagesLimit: Int) {
 
   var mainHandler = Handler(app.mainLooper)
+  val idCounter = AtomicInteger(0)
   val cache: Cache = DiskBasedCache(File(app.cacheDir, "Volley"))
   val queue: RequestQueue by lazy {
 	 return@lazy RequestQueue(cache, BasicNetwork(HurlStack()), maxThread).apply {
@@ -50,13 +52,14 @@ class SearchController(app: Application, val maxThread: Int, val pagesLimit: Int
 	 finishingCallback: (SearchResult) -> Unit
   ) {
 	 cancelAllTasks()
+	 idCounter.set(0)
 	 this.finishedCallback = finishingCallback
 	 this.updateCallback = updateCallback
 	 pageTasksList.add(
 		UrlPageTask(
 		  queue,
 		  startUrl,
-		  0,
+		  idCounter.getAndIncrement(),
 		  textToSearch,
 		  this::unifiedHandler
 		)
@@ -73,13 +76,11 @@ class SearchController(app: Application, val maxThread: Int, val pagesLimit: Int
 	 when (urlPageResult) {
 		is UrlPageResult.SucceedUrlPageResult -> {
 		  val availableSlots = pagesLimit - pageTasksList.count()
-		  var taskId = pageTasksList.last().id
 		  pageTasksList.addAll(urlPageResult.foundedUrls.take(availableSlots).map { url ->
-			 taskId += 1
 			 UrlPageTask(
 				queue,
 				url,
-				taskId,
+				idCounter.getAndIncrement(),
 				urlPageResult.searchingText,
 				this::unifiedHandler
 			 )
