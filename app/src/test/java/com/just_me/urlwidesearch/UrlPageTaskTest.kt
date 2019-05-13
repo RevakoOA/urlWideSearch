@@ -1,8 +1,8 @@
 package com.just_me.urlwidesearch
 
+import com.just_me.urlwidesearch.searching.SearchController
+import com.just_me.urlwidesearch.searching.UrlPageTask
 import org.junit.Test
-
-import org.junit.Assert.*
 
 class UrlPageTaskTest {
 
@@ -18,7 +18,7 @@ class UrlPageTaskTest {
   fun parseResponseUrls() {
 	 val result = UrlPageTask.parseResponseUrls(
 		" http://www.trello.com text zhttp://gravity.no " +
-			"bodyil, >http://google.com.ua ", SearchController.TUPICAL_URL_PATTERN
+			"bodyil, >http://google.com.ua ", SearchController.SIMPLE_URL_PATTERN
 	 )
 	 assert(result.size == 3)
 	 assert(result[0] == "http://www.trello.com")

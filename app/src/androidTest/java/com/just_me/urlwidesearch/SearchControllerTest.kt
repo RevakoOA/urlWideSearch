@@ -2,13 +2,14 @@ package com.just_me.urlwidesearch
 
 import android.app.Application
 import android.content.Context
-import org.junit.Assert.*
 import org.junit.Test
 import androidx.test.core.app.ApplicationProvider
 import com.android.volley.Request
 import com.android.volley.RequestQueue
 import com.android.volley.Response
 import com.android.volley.toolbox.*
+import com.just_me.urlwidesearch.searching.SearchController
+import com.just_me.urlwidesearch.searching.UrlPageTask
 import java.io.File
 
 class SearchControllerTest {
@@ -19,11 +20,11 @@ class SearchControllerTest {
 	 val controller = SearchController(app, 3, 100)
 	 val syncObject = Object()
 	 controller.search("http://www.google.com/search?q=urban", "urban", {}, {
-		synchronized(syncObject){
+		synchronized(syncObject) {
 		  syncObject.notify();
 		}
 	 })
-	 synchronized(syncObject){
+	 synchronized(syncObject) {
 		syncObject.wait();
 	 }
   }
@@ -41,7 +42,7 @@ class SearchControllerTest {
 		Response.Listener<String> { response ->
 		  // Display the first 500 characters of the response string.
 		  assert(response.isNotBlank())
-		  synchronized(syncObject){
+		  synchronized(syncObject) {
 			 syncObject.notify();
 		  }
 		},
@@ -51,7 +52,7 @@ class SearchControllerTest {
 
 // Add the request to the RequestQueue.
 	 queue.add(stringRequest)
-	 synchronized(syncObject){
+	 synchronized(syncObject) {
 		syncObject.wait();
 	 }
   }
@@ -66,7 +67,8 @@ class SearchControllerTest {
 
 // Request a string response from the provided URL.
 	 val stringRequest = StringRequest(
-		Request.Method.GET, url, futureRequest, futureRequest)
+		Request.Method.GET, url, futureRequest, futureRequest
+	 )
 
 // Add the request to the RequestQueue.
 	 queue.add(stringRequest)
@@ -88,7 +90,8 @@ class SearchControllerTest {
 
 // Request a string response from the provided URL.
 	 val stringRequest = StringRequest(
-		Request.Method.GET, url, futureRequest, futureRequest)
+		Request.Method.GET, url, futureRequest, futureRequest
+	 )
 
 // Add the request to the RequestQueue.
 	 queue.add(stringRequest)
@@ -100,7 +103,7 @@ class SearchControllerTest {
   fun findUrlsInResponseBig() {
 	 val appContext = ApplicationProvider.getApplicationContext<Context>()
 	 val tupicalGoogleResponse = RawReader.readRawFile(appContext, R.raw.tupical_google_page)
-	 val urlsList = UrlPageTask.parseResponseUrls(tupicalGoogleResponse, SearchController.TUPICAL_URL_PATTERN)
+	 val urlsList = UrlPageTask.parseResponseUrls(tupicalGoogleResponse, SearchController.SIMPLE_URL_PATTERN)
 	 assert(urlsList.size == 15)
   }
 
@@ -108,7 +111,7 @@ class SearchControllerTest {
   fun findUrlsInResponseSmall() {
 	 val appContext = ApplicationProvider.getApplicationContext<Context>()
 	 val tupicalGoogleResponse = RawReader.readRawFile(appContext, R.raw.tupical_my_ip_page)
-	 val urlsList = UrlPageTask.parseResponseUrls(tupicalGoogleResponse, SearchController.TUPICAL_URL_PATTERN)
+	 val urlsList = UrlPageTask.parseResponseUrls(tupicalGoogleResponse, SearchController.SIMPLE_URL_PATTERN)
 	 assert(urlsList.size == 5)
   }
 

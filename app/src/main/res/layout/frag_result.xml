@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+				  android:orientation="vertical"
+				  android:background="@color/background"
+				  android:layout_width="match_parent"
+				  android:layout_height="match_parent">
+
+ <LinearLayout
+	android:orientation="vertical"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content">
+
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+	<Button
+	  android:id="@+id/pauseResume"
+	  android:layout_weight="1"
+	  android:text="@string/pause"
+	  android:layout_width="wrap_content"
+	  android:layout_height="wrap_content"/>
+	<Button
+	  android:layout_weight="1"
+	  android:id="@+id/cancel"
+	  android:text="@string/cancel"
+	  android:layout_width="wrap_content"
+	  android:layout_height="wrap_content"/>
+  </LinearLayout>
+
+  <ProgressBar
+	 android:id="@+id/progresBar"
+	 android:layout_width="match_parent"
+	 android:layout_height="wrap_content"
+	 style="?android:attr/progressBarStyleHorizontal"/>
+
+ </LinearLayout>
+
+ <androidx.recyclerview.widget.RecyclerView
+	android:id="@+id/recyclerParcedUrls"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"/>
+
+</LinearLayout>
